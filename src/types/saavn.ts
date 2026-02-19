@@ -16,15 +16,21 @@ export interface SaavnAlbum {
   url?: string;
 }
 
+export interface SaavnArtist {
+  id: string;
+  name: string;
+  role?: string;
+}
+
 export interface SaavnSongResult {
   id: string;
   name: string;
   type?: string;
-  album: SaavnAlbum;
+  album?: SaavnAlbum;
   year?: string;
-  duration?: string;
+  duration?: string | number;
   primaryArtists?: string;
-  primaryArtistsId?: string;
+  artists?: { primary?: SaavnArtist[] };
   image: SaavnImage[];
   downloadUrl: SaavnDownloadUrl[];
   language?: string;
@@ -44,6 +50,7 @@ export interface PlayableSong {
   id: string;
   name: string;
   artists: string;
+  albumName?: string;
   imageUrl: string;
   durationSeconds: number;
   playUrl: string;

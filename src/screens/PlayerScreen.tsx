@@ -1,5 +1,7 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Slider from '@react-native-community/slider';
+import { useFocusEffect } from '@react-navigation/native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
 
@@ -10,8 +12,24 @@ function formatTime(sec: number) {
 }
 
 export function PlayerScreen() {
-  const { currentSong, isPlaying, position, duration, toggle } = usePlayerStore();
-  const { seekTo } = useAudioPlayer();
+  const { currentSong, isPlaying, position, duration, toggle, queue, currentIndex, next, previous, setPlayerScreenFocused } = usePlayerStore();
+  const { seekTo, setSliding } = useAudioPlayer();
+  const [isSliding, setIsSliding] = useState(false);
+  const [slideValue, setSlideValue] = useState(0);
+  const slidingRef = useRef(false);
+
+  const setFocusedRef = useRef(setPlayerScreenFocused);
+  setFocusedRef.current = setPlayerScreenFocused;
+  useFocusEffect(
+    useCallback(() => {
+      setFocusedRef.current(true);
+      return () => setFocusedRef.current(false);
+    }, [])
+  );
+
+  useEffect(() => {
+    if (!isSliding) setSlideValue(position);
+  }, [position, isSliding]);
 
   if (!currentSong) {
     return (
@@ -22,28 +40,78 @@ export function PlayerScreen() {
   }
 
   const safeDuration = duration > 0 ? duration : currentSong.durationSeconds;
+  const displayValue = isSliding ? slideValue : position;
 
   return (
     <View style={styles.container}>
       <Image source={{ uri: currentSong.imageUrl }} style={styles.artwork} />
       <Text style={styles.title} numberOfLines={1}>{currentSong.name}</Text>
       <Text style={styles.artist} numberOfLines={1}>{currentSong.artists}</Text>
+      {currentSong.albumName ? (
+        <Text style={styles.album} numberOfLines={1}>{currentSong.albumName}</Text>
+      ) : null}
       <View style={styles.progress}>
-        <Text style={styles.time}>{formatTime(position)}</Text>
+        <Text style={styles.time}>{formatTime(displayValue)}</Text>
         <Slider
+          key={currentSong.id}
           style={styles.slider}
           minimumValue={0}
           maximumValue={safeDuration}
-          value={position}
-          onSlidingComplete={(v) => seekTo(v)}
+          value={displayValue}
+          onSlidingStart={() => {
+            slidingRef.current = true;
+            setSliding(true);
+            setIsSliding(true);
+            setSlideValue(position);
+          }}
+          onValueChange={(v) => {
+            if (!slidingRef.current) {
+              slidingRef.current = true;
+              setSliding(true);
+              setIsSliding(true);
+            }
+            setSlideValue(v);
+          }}
+          onSlidingComplete={(v) => {
+            seekTo(v);
+            setSlideValue(v);
+            slidingRef.current = false;
+            setSliding(false);
+            setIsSliding(false);
+          }}
           minimumTrackTintColor="#333"
           maximumTrackTintColor="#ccc"
         />
         <Text style={styles.time}>{formatTime(safeDuration)}</Text>
       </View>
-      <TouchableOpacity style={styles.playBtn} onPress={toggle}>
-        <Text style={styles.playBtnText}>{isPlaying ? 'Pause' : 'Play'}</Text>
-      </TouchableOpacity>
+      <View style={styles.controlsRow}>
+        <TouchableOpacity
+          style={[styles.iconBtn, (queue.length === 0 || (currentIndex <= 0 && position <= 3)) && styles.iconBtnDisabled]}
+          onPress={() => {
+            if (position > 3) seekTo(0);
+            else if (currentIndex > 0) previous();
+          }}
+          disabled={queue.length === 0 || (currentIndex <= 0 && position <= 3)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={[styles.controlIcon, (queue.length === 0 || (currentIndex <= 0 && position <= 3)) && styles.controlIconDisabled]}>⏮</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.playBtn, styles.playBtnTransparent]}
+          onPress={toggle}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={styles.controlIconPlay}>{isPlaying ? '⏸' : '▶'}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.iconBtn, (queue.length === 0 || currentIndex >= queue.length - 1) && styles.iconBtnDisabled]}
+          onPress={next}
+          disabled={queue.length === 0 || currentIndex >= queue.length - 1}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <Text style={[styles.controlIcon, (queue.length === 0 || currentIndex >= queue.length - 1) && styles.controlIconDisabled]}>⏭</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -54,9 +122,16 @@ const styles = StyleSheet.create({
   artwork: { width: 200, height: 200, borderRadius: 8, marginTop: 24 },
   title: { fontSize: 20, fontWeight: '700', marginTop: 16 },
   artist: { fontSize: 16, color: '#666', marginTop: 4 },
+  album: { fontSize: 14, color: '#999', marginTop: 2 },
   progress: { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 24 },
   time: { fontSize: 12, color: '#666', width: 40 },
   slider: { flex: 1, height: 40 },
-  playBtn: { marginTop: 24, backgroundColor: '#333', paddingHorizontal: 48, paddingVertical: 14, borderRadius: 24 },
-  playBtnText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 24 },
+  iconBtn: { padding: 12 },
+  iconBtnDisabled: { opacity: 0.6 },
+  controlIcon: { fontSize: 28, color: '#333' },
+  controlIconDisabled: { color: '#999' },
+  controlIconPlay: { fontSize: 36, color: '#333' },
+  playBtn: { padding: 12 },
+  playBtnTransparent: { backgroundColor: 'transparent' },
 });

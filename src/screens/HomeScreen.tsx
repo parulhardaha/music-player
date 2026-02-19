@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,23 +8,53 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { searchSongs } from '../api/saavn';
+import { searchSongs, fetchSuggested } from '../api/saavn';
 import { usePlayerStore } from '../store/playerStore';
 import type { PlayableSong } from '../types/saavn';
 import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
+function SongRow({
+  item,
+  onPress,
+}: {
+  item: PlayableSong;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+      <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
+      <View style={styles.rowText}>
+        <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.artist} numberOfLines={1}>{item.artists}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 export function HomeScreen() {
   const [query, setQuery] = useState('');
   const [songs, setSongs] = useState<PlayableSong[]>([]);
+  const [suggested, setSuggested] = useState<PlayableSong[]>([]);
+  const [loadingSuggested, setLoadingSuggested] = useState(true);
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<Nav>();
-  const setSong = usePlayerStore((s) => s.setSong);
-  const play = usePlayerStore((s) => s.play);
+  const setQueueAndPlay = usePlayerStore((s) => s.setQueueAndPlay);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchSuggested().then((list) => {
+      if (!cancelled) setSuggested(list);
+    }).finally(() => {
+      if (!cancelled) setLoadingSuggested(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const onSearch = async () => {
     if (!query.trim()) return;
@@ -37,21 +67,10 @@ export function HomeScreen() {
     }
   };
 
-  const onSelectSong = (song: PlayableSong) => {
-    setSong(song);
-    play();
+  const playFromList = (list: PlayableSong[], index: number) => {
+    setQueueAndPlay(list, index);
     navigation.navigate('Player');
   };
-
-  const renderItem = ({ item }: { item: PlayableSong }) => (
-    <TouchableOpacity style={styles.row} onPress={() => onSelectSong(item)} activeOpacity={0.7}>
-      <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
-      <View style={styles.rowText}>
-        <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.artist} numberOfLines={1}>{item.artists}</Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   return (
     <View style={styles.container}>
@@ -68,18 +87,35 @@ export function HomeScreen() {
           <Text style={styles.btnText}>Search</Text>
         </TouchableOpacity>
       </View>
-      {loading ? (
-        <ActivityIndicator style={styles.loader} size="large" />
-      ) : (
-        <FlatList
-          data={songs}
-          keyExtractor={(item) => item.id}
-          renderItem={renderItem}
-          ListEmptyComponent={
-            <Text style={styles.empty}>Search for songs to play</Text>
-          }
-        />
-      )}
+      <ScrollView style={styles.scroll}>
+        <Text style={styles.sectionTitle}>Suggested</Text>
+        {loadingSuggested ? (
+          <ActivityIndicator style={styles.sectionLoader} size="small" />
+        ) : (
+          suggested.map((item, index) => (
+            <SongRow
+              key={item.id}
+              item={item}
+              onPress={() => playFromList(suggested, index)}
+            />
+          ))
+        )}
+        {songs.length > 0 && (
+          <>
+            <Text style={styles.sectionTitle}>Search results</Text>
+            {songs.map((item, index) => (
+              <SongRow
+                key={item.id}
+                item={item}
+                onPress={() => playFromList(songs, index)}
+              />
+            ))}
+          </>
+        )}
+        {!loading && songs.length === 0 && !loadingSuggested && (
+          <Text style={styles.empty}>Search for more songs</Text>
+        )}
+      </ScrollView>
     </View>
   );
 }
@@ -97,11 +133,13 @@ const styles = StyleSheet.create({
   },
   btn: { backgroundColor: '#333', paddingHorizontal: 16, justifyContent: 'center', borderRadius: 8 },
   btnText: { color: '#fff', fontWeight: '600' },
-  loader: { marginTop: 24 },
+  scroll: { flex: 1 },
+  sectionTitle: { fontSize: 18, fontWeight: '700', paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
+  sectionLoader: { marginVertical: 12 },
   row: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
   thumb: { width: 48, height: 48, borderRadius: 4 },
   rowText: { flex: 1, marginLeft: 12, justifyContent: 'center' },
   title: { fontSize: 16, fontWeight: '600' },
   artist: { fontSize: 14, color: '#666', marginTop: 2 },
-  empty: { textAlign: 'center', color: '#999', marginTop: 24 },
+  empty: { textAlign: 'center', color: '#999', paddingVertical: 24 },
 });

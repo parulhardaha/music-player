@@ -1,8 +1,10 @@
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { PlayerScreen } from './src/screens/PlayerScreen';
+import { MiniPlayer } from './src/components/MiniPlayer';
 import { useAudioPlayer } from './src/hooks/useAudioPlayer';
 import type { RootStackParamList } from './src/navigation/types';
 
@@ -21,7 +23,10 @@ function AppContent() {
 export default function App() {
   return (
     <NavigationContainer>
-      <AppContent />
+      <View style={{ flex: 1 }}>
+        <AppContent />
+        <MiniPlayer />
+      </View>
       <StatusBar style="auto" />
     </NavigationContainer>
   );

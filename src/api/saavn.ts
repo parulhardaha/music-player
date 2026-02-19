@@ -17,12 +17,25 @@ function getPlayUrl(urls: { quality: string; link?: string; url?: string }[]): s
   return first?.link || first?.url || '';
 }
 
+function getArtistsString(r: SaavnSongResult): string {
+  const primary = r.artists?.primary;
+  if (Array.isArray(primary) && primary.length > 0) {
+    return primary.map((a) => a.name).join(', ');
+  }
+  if (typeof r.primaryArtists === 'string' && r.primaryArtists.trim()) {
+    return r.primaryArtists.trim();
+  }
+  return 'Unknown';
+}
+
 function toPlayableSong(r: SaavnSongResult): PlayableSong {
-  const duration = parseInt(r.duration || '0', 10) || 0;
+  const duration =
+    typeof r.duration === 'number' ? r.duration : parseInt(String(r.duration || '0'), 10) || 0;
   return {
     id: r.id,
     name: r.name,
-    artists: r.primaryArtists || 'Unknown',
+    artists: getArtistsString(r),
+    albumName: r.album?.name,
     imageUrl: getImageUrl(r.image),
     durationSeconds: duration,
     playUrl: getPlayUrl(r.downloadUrl || []),
@@ -36,4 +49,23 @@ export async function searchSongs(query: string): Promise<PlayableSong[]> {
   const data = json.data;
   if (!data?.results) return [];
   return data.results.map(toPlayableSong);
+}
+
+const SUGGESTED_QUERIES = ['hindi hits', 'bollywood', 'arijit singh'];
+
+export async function fetchSuggested(): Promise<PlayableSong[]> {
+  const results = await Promise.all(
+    SUGGESTED_QUERIES.map((q) => searchSongs(q))
+  );
+  const seen = new Set<string>();
+  const merged: PlayableSong[] = [];
+  for (const list of results) {
+    for (const s of list) {
+      if (!seen.has(s.id)) {
+        seen.add(s.id);
+        merged.push(s);
+      }
+    }
+  }
+  return merged.slice(0, 15);
 }
