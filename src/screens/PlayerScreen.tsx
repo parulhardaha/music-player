@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { usePlayerStore } from '../store/playerStore';
@@ -17,7 +18,7 @@ function formatTime(sec: number) {
 
 export function PlayerScreen() {
   const navigation = useNavigation<Nav>();
-  const { currentSong, isPlaying, position, duration, toggle, queue, currentIndex, next, previous, setPlayerScreenFocused } = usePlayerStore();
+  const { currentSong, isPlaying, position, duration, toggle, queue, currentIndex, next, previous, shuffleEnabled, setShuffleEnabled, setPlayerScreenFocused } = usePlayerStore();
   const { seekTo, setSliding } = useAudioPlayer();
   const [isSliding, setIsSliding] = useState(false);
   const [slideValue, setSlideValue] = useState(0);
@@ -101,6 +102,17 @@ export function PlayerScreen() {
       </View>
       <View style={styles.controlsRow}>
         <TouchableOpacity
+          style={styles.shuffleBtn}
+          onPress={() => setShuffleEnabled(!shuffleEnabled)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+        >
+          <MaterialIcons
+            name="shuffle"
+            size={28}
+            color={shuffleEnabled ? '#333' : '#999'}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
           style={[styles.iconBtn, (queue.length === 0 || (currentIndex <= 0 && position <= 3)) && styles.iconBtnDisabled]}
           onPress={() => {
             if (position > 3) seekTo(0);
@@ -109,22 +121,34 @@ export function PlayerScreen() {
           disabled={queue.length === 0 || (currentIndex <= 0 && position <= 3)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={[styles.controlIcon, (queue.length === 0 || (currentIndex <= 0 && position <= 3)) && styles.controlIconDisabled]}>⏮</Text>
+          <MaterialIcons
+            name="skip-previous"
+            size={32}
+            color={queue.length === 0 || (currentIndex <= 0 && position <= 3) ? '#999' : '#333'}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.playBtn, styles.playBtnTransparent]}
           onPress={toggle}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={styles.controlIconPlay}>{isPlaying ? '⏸' : '▶'}</Text>
+          <MaterialIcons
+            name={isPlaying ? 'pause' : 'play-arrow'}
+            size={40}
+            color="#333"
+          />
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.iconBtn, (queue.length === 0 || currentIndex >= queue.length - 1) && styles.iconBtnDisabled]}
+          style={[styles.iconBtn, (queue.length === 0 || (!shuffleEnabled && currentIndex >= queue.length - 1)) && styles.iconBtnDisabled]}
           onPress={next}
-          disabled={queue.length === 0 || currentIndex >= queue.length - 1}
+          disabled={queue.length === 0 || (!shuffleEnabled && currentIndex >= queue.length - 1)}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
         >
-          <Text style={[styles.controlIcon, (queue.length === 0 || currentIndex >= queue.length - 1) && styles.controlIconDisabled]}>⏭</Text>
+          <MaterialIcons
+            name="skip-next"
+            size={32}
+            color={queue.length === 0 || (!shuffleEnabled && currentIndex >= queue.length - 1) ? '#999' : '#333'}
+          />
         </TouchableOpacity>
       </View>
     </View>
@@ -141,12 +165,10 @@ const styles = StyleSheet.create({
   progress: { flexDirection: 'row', alignItems: 'center', width: '100%', marginTop: 24 },
   time: { fontSize: 12, color: '#666', width: 40 },
   slider: { flex: 1, height: 40 },
-  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 24 },
+  controlsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 24, gap: 16 },
+  shuffleBtn: { padding: 12 },
   iconBtn: { padding: 12 },
   iconBtnDisabled: { opacity: 0.6 },
-  controlIcon: { fontSize: 28, color: '#333' },
-  controlIconDisabled: { color: '#999' },
-  controlIconPlay: { fontSize: 36, color: '#333' },
   playBtn: { padding: 12 },
   playBtnTransparent: { backgroundColor: 'transparent' },
 });

@@ -1,9 +1,34 @@
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Alert } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { usePlayerStore } from '../store/playerStore';
 import type { PlayableSong } from '../types/saavn';
+import type { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Queue'>;
 
 export function QueueScreen() {
-  const { queue, currentIndex, setQueueAndPlay, removeFromQueue, reorderQueue } = usePlayerStore();
+  const navigation = useNavigation<Nav>();
+  const { queue, currentIndex, setQueueAndPlay, removeFromQueue, reorderQueue, clearQueue } = usePlayerStore();
+
+  const onClearQueue = () => {
+    if (queue.length === 0) return;
+    Alert.alert(
+      'Clear queue',
+      'Clear all songs and close the player?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Clear',
+          style: 'destructive',
+          onPress: () => {
+            clearQueue();
+            navigation.navigate('Home');
+          },
+        },
+      ]
+    );
+  };
 
   if (queue.length === 0) {
     return (
@@ -60,9 +85,12 @@ export function QueueScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={styles.clearBtn} onPress={onClearQueue}>
+        <Text style={styles.clearBtnText}>Clear queue</Text>
+      </TouchableOpacity>
       <FlatList
         data={queue}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         contentContainerStyle={styles.list}
       />
@@ -72,6 +100,14 @@ export function QueueScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  clearBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    backgroundColor: '#fff',
+  },
+  clearBtnText: { fontSize: 15, color: '#c00', fontWeight: '500' },
   list: { paddingBottom: 24 },
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyText: { fontSize: 18, fontWeight: '600', color: '#333' },

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Audio } from 'expo-av';
 import { usePlayerStore } from '../store/playerStore';
+import { useDownloadsStore } from '../store/downloadsStore';
 
 let globalSound: Audio.Sound | null = null;
 let globalSongId: string | null = null;
@@ -46,8 +47,19 @@ export function useAudioPlayer() {
   }, []);
 
   useEffect(() => {
-    if (!currentSong?.playUrl) return;
+    if (!currentSong?.playUrl) {
+      let cancelled = false;
+      loadQueue = loadQueue.then(async () => {
+        if (cancelled) return;
+        await stopAndUnload(globalSound);
+        globalSound = null;
+        globalSongId = null;
+        soundRef.current = null;
+      });
+      return () => { cancelled = true; };
+    }
     const songId = currentSong.id;
+    const playbackUri = useDownloadsStore.getState().getPlaybackUri(songId) ?? currentSong.playUrl;
     let cancelled = false;
 
     loadQueue = loadQueue.then(async () => {
@@ -65,7 +77,7 @@ export function useAudioPlayer() {
       if (cancelled) return;
 
       const { sound } = await Audio.Sound.createAsync(
-        { uri: currentSong.playUrl },
+        { uri: playbackUri },
         { shouldPlay: false, progressUpdateIntervalMillis: 1000 },
         (status) => {
           if (!status.isLoaded) return;
@@ -78,7 +90,7 @@ export function useAudioPlayer() {
           if (status.durationMillis != null) setDuration(status.durationMillis / 1000);
           if (status.didJustFinish) {
             const state = usePlayerStore.getState();
-            if (state.queue.length > 0 && state.currentIndex < state.queue.length - 1) state.next();
+            if (state.queue.length > 0) state.next();
             else state.pause();
           }
         }
@@ -87,8 +99,9 @@ export function useAudioPlayer() {
       globalSound = sound;
       globalSongId = songId;
       soundRef.current = sound;
-      play();
-      sound.playAsync();
+      if (usePlayerStore.getState().isPlaying) {
+        sound.playAsync();
+      }
     });
 
     return () => {

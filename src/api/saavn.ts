@@ -51,11 +51,42 @@ export async function searchSongs(query: string): Promise<PlayableSong[]> {
   return data.results.map(toPlayableSong);
 }
 
-const SUGGESTED_QUERIES = ['hindi hits', 'bollywood', 'arijit singh'];
+/** Pool of search queries; we pick random ones each time for variety */
+const SUGGESTED_QUERY_POOL = [
+  'hindi hits',
+  'bollywood',
+  'arijit singh',
+  'diljit dosanjh',
+  'shreya goshal',
+  'atif aslam',
+  'badshah',
+  'honey singh',
+  'lata mangeshkar',
+  'kishore kumar',
+  'romantic hindi songs',
+  'punjabi hits',
+  'taylor swift',
+  'ed sheeran',
+  'coldplay',
+  'latest bollywood',
+  'party songs hindi',
+  'acoustic hindi',
+  'arijit singh romantic',
+  'neha kakkar',
+];
+
+const SUGGESTED_QUERY_COUNT = 4;
+const SUGGESTED_SONGS_LIMIT = 15;
+
+function pickRandomQueries(pool: string[], count: number): string[] {
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, count);
+}
 
 export async function fetchSuggested(): Promise<PlayableSong[]> {
+  const queries = pickRandomQueries(SUGGESTED_QUERY_POOL, SUGGESTED_QUERY_COUNT);
   const results = await Promise.all(
-    SUGGESTED_QUERIES.map((q) => searchSongs(q))
+    queries.map((q) => searchSongs(q))
   );
   const seen = new Set<string>();
   const merged: PlayableSong[] = [];
@@ -67,5 +98,6 @@ export async function fetchSuggested(): Promise<PlayableSong[]> {
       }
     }
   }
-  return merged.slice(0, 15);
+  const shuffled = merged.sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, SUGGESTED_SONGS_LIMIT);
 }

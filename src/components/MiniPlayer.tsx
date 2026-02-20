@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
 import { usePlayerStore } from '../store/playerStore';
@@ -10,13 +11,13 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export function MiniPlayer() {
   const navigation = useNavigation<Nav>();
-  const { currentSong, isPlaying, queue, currentIndex, toggle, next, previous, position, duration, playerScreenFocused } = usePlayerStore();
+  const { currentSong, isPlaying, queue, currentIndex, toggle, next, previous, position, duration, playerScreenFocused, shuffleEnabled, setShuffleEnabled } = usePlayerStore();
   const seekTo = getSeekTo();
 
   if (!currentSong || playerScreenFocused) return null;
 
   const canGoPrev = queue.length > 0 && currentIndex > 0;
-  const canGoNext = queue.length > 0 && currentIndex < queue.length - 1;
+  const canGoNext = queue.length > 0 && (shuffleEnabled ? queue.length > 1 : currentIndex < queue.length - 1);
   const safeDuration = duration > 0 ? duration : currentSong.durationSeconds;
 
   return (
@@ -42,19 +43,38 @@ export function MiniPlayer() {
         </View>
         <View style={styles.controls}>
           <TouchableOpacity
+            style={styles.iconBtn}
+            onPress={(e) => { e.stopPropagation(); setShuffleEnabled(!shuffleEnabled); }}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          >
+            <MaterialIcons
+              name="shuffle"
+              size={24}
+              color={shuffleEnabled ? '#333' : '#999'}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
             style={[styles.iconBtn, !canGoPrev && styles.iconBtnDisabled]}
             onPress={(e) => { e.stopPropagation(); previous(); }}
             disabled={!canGoPrev}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={[styles.icon, !canGoPrev && styles.iconDisabled]}>⏮</Text>
+            <MaterialIcons
+              name="skip-previous"
+              size={26}
+              color={!canGoPrev ? '#999' : '#333'}
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconBtn, styles.iconBtnPlayPause]}
             onPress={(e) => { e.stopPropagation(); toggle(); }}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={styles.iconPlay}>{isPlaying ? '⏸' : '▶'}</Text>
+            <MaterialIcons
+              name={isPlaying ? 'pause' : 'play-arrow'}
+              size={30}
+              color="#333"
+            />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.iconBtn, !canGoNext && styles.iconBtnDisabled]}
@@ -62,7 +82,11 @@ export function MiniPlayer() {
             disabled={!canGoNext}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >
-            <Text style={[styles.icon, !canGoNext && styles.iconDisabled]}>⏭</Text>
+            <MaterialIcons
+              name="skip-next"
+              size={26}
+              color={!canGoNext ? '#999' : '#333'}
+            />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -85,11 +109,8 @@ const styles = StyleSheet.create({
   info: { flex: 1, marginLeft: 12, minWidth: 0 },
   title: { fontSize: 14, fontWeight: '600' },
   artist: { fontSize: 12, color: '#666', marginTop: 2 },
-  controls: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  controls: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   iconBtn: { padding: 8 },
   iconBtnPlayPause: { backgroundColor: 'transparent' },
   iconBtnDisabled: { opacity: 0.6 },
-  icon: { fontSize: 22, color: '#333' },
-  iconDisabled: { color: '#999' },
-  iconPlay: { fontSize: 26, color: '#333' },
 });
