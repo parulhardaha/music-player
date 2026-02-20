@@ -8,7 +8,10 @@
     "android:clear": "$HOME/.nvm/versions/node/v20.20.0/bin/npx expo start --android --clear",
     "android:clean": "rm -rf node_modules/.cache .expo /tmp/metro-* /tmp/haste-* 2>/dev/null; $HOME/.nvm/versions/node/v20.20.0/bin/npx expo start --android --clear",
     "android:build": "$HOME/.nvm/versions/node/v20.20.0/bin/npx expo run:android",
-    "ios": "expo start --ios",
+    "android:apk": "npx expo prebuild --platform android --no-install && cd android && ./gradlew assembleRelease",
+    "android:apk:debug": "npx expo prebuild --platform android --no-install && cd android && ./gradlew assembleDebug",
+    "android:apk:eas": "npx eas-cli build --platform android --profile preview",
+    "ios": "expo run:ios",
     "web": "expo start --web"
   },
   "dependencies": {
