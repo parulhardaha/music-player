@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { MaterialIcons } from '@expo/vector-icons';
 import { searchSongs, fetchSuggested } from '../api/saavn';
@@ -163,6 +163,18 @@ export function HomeScreen() {
     }
   };
 
+  // When returning to Home (e.g. back from Player), clear search so suggested shows again
+  useFocusEffect(
+    useCallback(() => {
+      setSongs([]);
+      setQuery('');
+    }, [])
+  );
+
+  const showingSearchResults = songs.length > 0;
+  const list = showingSearchResults ? songs : suggested;
+  const sectionTitle = showingSearchResults ? 'Search results' : 'Suggested';
+
   return (
     <View style={styles.container}>
       <Modal
@@ -224,38 +236,38 @@ export function HomeScreen() {
       <ScrollView
         style={styles.scroll}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefreshSuggested} />
+          !showingSearchResults ? (
+            <RefreshControl refreshing={refreshing} onRefresh={onRefreshSuggested} />
+          ) : undefined
         }
       >
         <View style={styles.sectionTitleRow}>
-          <Text style={styles.sectionTitle}>Suggested</Text>
+          <Text style={styles.sectionTitle}>{sectionTitle}</Text>
         </View>
-        {loadingSuggested && suggested.length === 0 ? (
-          <ActivityIndicator style={styles.sectionLoader} size="small" />
-        ) : (
-          suggested.map((item, index) => (
+        {loading ? (
+          <Text style={styles.searchingText}>Searching…</Text>
+        ) : showingSearchResults ? (
+          list.map((item, index) => (
             <SongRow
               key={item.id}
               item={item}
-              onPress={() => playFromList(suggested, index)}
+              onPress={() => playFromList(list, index)}
+              onOpenMenu={() => setMenuSong(item)}
+            />
+          ))
+        ) : loadingSuggested && suggested.length === 0 ? (
+          <ActivityIndicator style={styles.sectionLoader} size="small" />
+        ) : (
+          list.map((item, index) => (
+            <SongRow
+              key={item.id}
+              item={item}
+              onPress={() => playFromList(list, index)}
               onOpenMenu={() => setMenuSong(item)}
             />
           ))
         )}
-        {songs.length > 0 ? (
-          <>
-            <Text style={styles.sectionTitle}>Search results</Text>
-            {songs.map((item, index) => (
-              <SongRow
-                key={item.id}
-                item={item}
-                onPress={() => playFromList(songs, index)}
-                onOpenMenu={() => setMenuSong(item)}
-              />
-            ))}
-          </>
-        ) : null}
-        {!loading && songs.length === 0 && !loadingSuggested && (
+        {!loading && !showingSearchResults && suggested.length === 0 && !loadingSuggested && (
           <Text style={styles.empty}>Search for more songs</Text>
         )}
       </ScrollView>
@@ -280,6 +292,7 @@ const styles = StyleSheet.create({
   sectionTitleRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
   sectionTitle: { fontSize: 18, fontWeight: '700' },
   sectionLoader: { marginVertical: 12 },
+  searchingText: { paddingHorizontal: 12, paddingVertical: 12, color: '#666', fontSize: 15 },
   row: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
   thumb: { width: 48, height: 48, borderRadius: 4 },
   rowText: { flex: 1, marginLeft: 12, justifyContent: 'center', minWidth: 0 },

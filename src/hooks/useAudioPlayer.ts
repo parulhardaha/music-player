@@ -59,7 +59,7 @@ export function useAudioPlayer() {
       return () => { cancelled = true; };
     }
     const songId = currentSong.id;
-    const playbackUri = useDownloadsStore.getState().getPlaybackUri(songId) ?? currentSong.playUrl;
+    const playUrl = currentSong.playUrl;
     let cancelled = false;
 
     loadQueue = loadQueue.then(async () => {
@@ -75,6 +75,10 @@ export function useAudioPlayer() {
       soundRef.current = null;
       await new Promise((r) => setTimeout(r, 150));
       if (cancelled) return;
+
+      // Prefer local file URI when song is downloaded (offline playback)
+      const playbackUri = useDownloadsStore.getState().getPlaybackUri(songId) ?? playUrl;
+      if (!playbackUri) return;
 
       const { sound } = await Audio.Sound.createAsync(
         { uri: playbackUri },

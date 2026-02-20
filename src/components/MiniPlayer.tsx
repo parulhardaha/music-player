@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons } from '@expo/vector-icons';
 import Slider from '@react-native-community/slider';
 import { useNavigation } from '@react-navigation/native';
@@ -10,6 +11,7 @@ import type { RootStackParamList } from '../navigation/types';
 type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 export function MiniPlayer() {
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
   const { currentSong, isPlaying, queue, currentIndex, toggle, next, previous, position, duration, playerScreenFocused, shuffleEnabled, setShuffleEnabled } = usePlayerStore();
   const seekTo = getSeekTo();
@@ -21,7 +23,7 @@ export function MiniPlayer() {
   const safeDuration = duration > 0 ? duration : currentSong.durationSeconds;
 
   return (
-    <View style={styles.bar}>
+    <View style={[styles.bar, { paddingBottom: Math.max(8, insets.bottom) }]}>
       <Slider
         style={styles.slider}
         minimumValue={0}

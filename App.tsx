@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { HomeScreen } from './src/screens/HomeScreen';
@@ -48,12 +49,14 @@ function AppContent() {
 
 export default function App() {
   return (
-    <NavigationContainer>
-      <View style={{ flex: 1 }}>
-        <AppContent />
-        <MiniPlayer />
-      </View>
-      <StatusBar style="auto" />
-    </NavigationContainer>
+    <SafeAreaProvider>
+      <NavigationContainer>
+        <View style={{ flex: 1 }}>
+          <AppContent />
+          <MiniPlayer />
+        </View>
+        <StatusBar style="auto" />
+      </NavigationContainer>
+    </SafeAreaProvider>
   );
 }
