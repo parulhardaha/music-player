@@ -1,9 +1,13 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { usePlayerStore } from '../store/playerStore';
 import { useAudioPlayer } from '../hooks/useAudioPlayer';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../navigation/types';
+
+type Nav = NativeStackNavigationProp<RootStackParamList, 'Player'>;
 
 function formatTime(sec: number) {
   const m = Math.floor(sec / 60);
@@ -12,11 +16,22 @@ function formatTime(sec: number) {
 }
 
 export function PlayerScreen() {
+  const navigation = useNavigation<Nav>();
   const { currentSong, isPlaying, position, duration, toggle, queue, currentIndex, next, previous, setPlayerScreenFocused } = usePlayerStore();
   const { seekTo, setSliding } = useAudioPlayer();
   const [isSliding, setIsSliding] = useState(false);
   const [slideValue, setSlideValue] = useState(0);
   const slidingRef = useRef(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerRight: () => (
+        <TouchableOpacity onPress={() => navigation.navigate('Queue')} style={{ padding: 8 }}>
+          <Text style={{ fontSize: 16, color: '#007AFF' }}>Queue</Text>
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   const setFocusedRef = useRef(setPlayerScreenFocused);
   setFocusedRef.current = setPlayerScreenFocused;

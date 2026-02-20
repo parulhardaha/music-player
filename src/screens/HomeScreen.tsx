@@ -22,17 +22,31 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 function SongRow({
   item,
   onPress,
+  onAddToQueue,
 }: {
   item: PlayableSong;
   onPress: () => void;
+  onAddToQueue: () => void;
 }) {
   return (
-    <TouchableOpacity style={styles.row} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={styles.row}
+      onPress={onPress}
+      onLongPress={onAddToQueue}
+      activeOpacity={0.7}
+    >
       <Image source={{ uri: item.imageUrl }} style={styles.thumb} />
       <View style={styles.rowText}>
         <Text style={styles.title} numberOfLines={1}>{item.name}</Text>
         <Text style={styles.artist} numberOfLines={1}>{item.artists}</Text>
       </View>
+      <TouchableOpacity
+        style={styles.addBtn}
+        onPress={(e) => { e.stopPropagation(); onAddToQueue(); }}
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+      >
+        <Text style={styles.addBtnText}>+ Queue</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -45,6 +59,7 @@ export function HomeScreen() {
   const [loading, setLoading] = useState(false);
   const navigation = useNavigation<Nav>();
   const setQueueAndPlay = usePlayerStore((s) => s.setQueueAndPlay);
+  const addToQueue = usePlayerStore((s) => s.addToQueue);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +112,7 @@ export function HomeScreen() {
               key={item.id}
               item={item}
               onPress={() => playFromList(suggested, index)}
+              onAddToQueue={() => addToQueue(item)}
             />
           ))
         )}
@@ -108,6 +124,7 @@ export function HomeScreen() {
                 key={item.id}
                 item={item}
                 onPress={() => playFromList(songs, index)}
+                onAddToQueue={() => addToQueue(item)}
               />
             ))}
           </>
@@ -136,10 +153,12 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   sectionTitle: { fontSize: 18, fontWeight: '700', paddingHorizontal: 12, paddingTop: 16, paddingBottom: 8 },
   sectionLoader: { marginVertical: 12 },
-  row: { flexDirection: 'row', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  row: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#eee' },
   thumb: { width: 48, height: 48, borderRadius: 4 },
-  rowText: { flex: 1, marginLeft: 12, justifyContent: 'center' },
+  rowText: { flex: 1, marginLeft: 12, justifyContent: 'center', minWidth: 0 },
   title: { fontSize: 16, fontWeight: '600' },
   artist: { fontSize: 14, color: '#666', marginTop: 2 },
+  addBtn: { paddingVertical: 6, paddingHorizontal: 10 },
+  addBtnText: { fontSize: 13, color: '#007AFF', fontWeight: '500' },
   empty: { textAlign: 'center', color: '#999', paddingVertical: 24 },
 });
