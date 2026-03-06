@@ -62,3 +62,21 @@ The app will connect to Metro for reload
 | **Saavn-style API** | Search and suggested songs | External API (`saavn.sumit.co`) used for search and “suggested” content; keeps the app focused on playback and local features. |
 
 ---
+
+## 4. Screenshots
+<table>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/299956dc-e72a-4d5c-a61f-b4b96636f4b9" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/7b05dc78-c2dd-4138-a2b1-1577eb79cea3" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/265a08b1-892e-4eeb-bd61-36abea09d5be" width="250"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/1cfe98ad-c8f3-4faa-b55b-bbc3f3668f7f" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/e63b76a2-0a96-4a84-a981-c9b80fdaaffa" width="250"/></td>
+    <td><img src="https://github.com/user-attachments/assets/1ad7e1a0-9f6f-4512-b339-5e1d54f77c1c" width="250"/></td>
+  </tr>
+  <tr>
+    <td><img src="https://github.com/user-attachments/assets/e08b7436-082d-42a6-8653-f49693ec1ff2" width="250"/></td>
+  </tr>
+</table>
+
